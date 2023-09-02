@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@arco-design/web-vue/dist/arco-vue.min.js"></script>
+    <script src="https://unpkg.com/@arco-design/web-vue/dist/arco-vue-icon.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@arco-design/web-vue/dist/arco.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap-utilities.min.css" />
+    <title>Todo App</title>
+  </head>
+  <body>
+    <div id="app">
+      <div class="container mx-auto p-2">
+        <div class="todo-app border rounded p-3">
+          <div class="header d-flex justify-content-between align-items-center">
+            <h1>Todo App</h1>
+            <!-- button create todo -->
+            <a-button
+              @click="isCreateBoxOpen = !isCreateBoxOpen"
+              type="primary"
+              shape="round">
+              <span class="me-1"><icon-plus /></span>
+              <span>Create todo</span>
+            </a-button>
+          </div>
+          <div class="my-3">
+            <span>
+              <!-- input title -->
+              <a-input
+                v-if="isCreateBoxOpen"
+                v-model="newTodoTitle"
+                class="w-100 mb-3"
+                placeholder="Please todo title"
+                allow-clear />
+            </span>
+            <span>
+              <!-- input content -->
+              <a-textarea
+                v-if="isCreateBoxOpen"
+                v-model="newTodoContent"
+                autoSize
+                class="w-100 mb-3"
+                placeholder="Please todo content"
+                allow-clear />
+            </span>
+            <div class="d-flex justify-content-between align-items-center">
+              <span v-if="isCreateBoxOpen">
+                <a-checkbox v-model="newTodoCheckbox"></a-checkbox
+              ></span>
+              <!-- button save -->
+
+              <a-button
+                v-if="isCreateBoxOpen"
+                @click="createTodo"
+                type="primary"
+                status="success"
+                shape="round">
+                <span class="me-1"><icon-check /></span>
+                <span>Save</span>
+              </a-button>
+            </div>
+          </div>
+          <div class="body mt-5">
+            <div class="todo-list">
+              <todo-item
+                @delete-todo="deleteTodo"
+                @update-todo="updateTodo"
+                v-for="todo in todos"
+                :todo="todo"></todo-item>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      const { createApp, ref } = Vue;
+
+      const app = createApp({
+        setup() {
+          const isCreateBoxOpen = ref(false);
+
+          const todos = ref([
+            {
+              id: 1,
+              title: "Todo1",
+              content:
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Asperiores earum, sit sapiente possimus commodiminus animi illo, tempore fugiat, nulla itaque",
+              done: true,
+            },
+            {
+              id: 2,
+              title: "Todo2",
+              content:
+                "Lorem ipsum dolor sit amet consectetur adipisicing elit. Asperiores earum, sit sapiente possimus commodiminus animi illo, tempore fugiat, nulla itaque",
+              done: false,
+            },
+          ]);
+
+          const newTodoTitle = ref("");
+          const newTodoContent = ref("");
+          const newTodoCheckbox = ref(false);
+
+          const createTodo = () => {
+            const newTodo = {
+              id: Math.floor(Math.random() * 100000),
+              title: newTodoTitle.value,
+              content: newTodoContent.value,
+              done: newTodoCheckbox.value,
+            };
+
+            todos.value = [...todos.value, newTodo];
+            newTodoTitle.value = "";
+            newTodoContent.value = "";
+            newTodoCheckbox.value = false;
+
+            isCreateBoxOpen.value = false;
+          };
+
+          const deleteTodo = (id) => {
+            todos.value = todos.value.filter((el) => el.id != id);
+          };
+
+          const updateTodo = (id, updatedTodo) => {
+            todos.value = todos.value.map((el) => {
+              if (el.id == id) {
+                el = updatedTodo;
+              }
+              return el;
+            });
+          };
+
+          return {
+            todos,
+            newTodoTitle,
+            newTodoContent,
+            newTodoCheckbox,
+            isCreateBoxOpen,
+            deleteTodo,
+            createTodo,
+            updateTodo,
+          };
+        },
+      });
+
+      app.component("todo-item", {
+        props: {
+          todo: { type: Object },
+        },
+        emits: ["deleteTodo", "updateTodo"],
+        setup(props, { emit }) {
+          const checkboxValue = ref(props.todo.done);
+          const todoTitle = ref(props.todo.title);
+          const todoContent = ref(props.todo.content);
+          const isEditOpen = ref(false);
+
+          const handleDelete = (id) => {
+            emit("deleteTodo", id);
+          };
+          const handleUpdate = (id) => {
+            const updatedTodo = {
+              id: id,
+              title: todoTitle.value,
+              content: todoContent.value,
+              done: checkboxValue.value,
+            };
+            emit("updateTodo", id, updatedTodo);
+            isEditOpen.value = false;
+          };
+
+          return {
+            checkboxValue,
+            todoTitle,
+            todoContent,
+            isEditOpen,
+            handleDelete,
+            handleUpdate,
+          };
+        },
+        template: /*html*/ `
+          <div class="todo-item w-100">
+            <a-card hoverable class="w-100 mb-5">
+              <div
+                class="content-wrapper d-flex justify-content-between align-items-center">
+                <div
+                  class="left-content d-flex justify-content-start align-items-center">
+                  <span> <a-checkbox v-model="checkboxValue" :disabled="!isEditOpen"></a-checkbox></span>
+                  <div class="ms-3">
+                    <h3>{{todo.title}}</h3>
+                    <p>{{todo.content}}</p>
+                    <span>
+                      <a-input
+                        v-if="isEditOpen"
+                        class="w-100 mb-3"
+                        v-model="todoTitle"
+                        placeholder="Please todo title"
+                        allow-clear />
+                    </span>
+                    <span>
+                      <a-textarea
+                        v-if="isEditOpen"
+                        class="w-100 mb-3"
+                        v-model="todoContent"
+                        placeholder="Please todo content"
+                        autoSize
+                        allow-clear />
+                    </span>
+                    <a-button
+                      v-if="isEditOpen"
+                      @click="handleUpdate(todo.id)"
+                      type="secondary"
+                      status="success"
+                      shape="round">
+                      <span class="me-1"><icon-check /></span>
+                      <span>Update</span>
+                    </a-button>
+                  </div>
+                </div>
+                <div class="action ms-2 d-flex justify-content-between">
+                  <span class="text-primary" @click="isEditOpen = !isEditOpen" style="cursor: pointer;"><icon-edit style="font-size: 22px" /></span>
+                  <span class="ms-2 text-danger"
+                    style="cursor: pointer;"
+                    @click="handleDelete(todo.id)"
+                    ><icon-delete style="font-size: 22px"
+                  /></span>
+                </div>
+              </div>
+            </a-card>
+          </div>
+        `,
+      });
+
+      app.use(ArcoVue);
+      app.use(ArcoVueIcon);
+      app.mount("#app");
+    </script>
+  </body>
+</html>
